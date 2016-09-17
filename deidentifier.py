@@ -1,51 +1,70 @@
-from collections import defaultdict
-from csv import DictReader
-import os
-from reader import open_csv
+import csv
+from readers import open_csv
 import random
 import string
 
-def deidentify(emr=None, target_fields=None, filename=None, output=None):
+
+def deidentify(emr='accuro', target_fields=None, filename=None, output=None):
     """Reads a CSV and replaces fields with deidentified data of the same length and type.
        Deidentification preserves repeated groups of fields
-       e.g. Rows with same firstname, lastname, and PHN
+       e.g. Rows with same first name, last name, and PHN will be deidentified the same way
        Deidentification will attempt to replace fields with similar types of characters
        i.e. numeric -> numeric, alphanumeric -> alphanumeric etc.
+
+       deidentify(emr='accuro',
+                  target_fields=['firstname', 'lastname', 'phn'],
+                  filename='tests/identifiable.csv',
+                  output='tests/unidentifiable.csv')
     """
     # Open a dict reader to the CSV file
     reader = open_csv(emr=emr, filename=filename)
+    fieldnames = reader.fieldnames
+
+    # Open a CSV file to write to
+    out = open(output, 'w')
+    writer = csv.writer(out, lineterminator='\n')
+
+    # Make sure target_fields is a list
+    if not isinstance(target_fields, list):
+        target_fields = list(target_fields)
 
     # Make sure all fields to deidentify are in the file
-    assert set(target_fields).issubset(reader.fieldnames)
-
-    deidentified_file = []
+    assert set(target_fields).issubset(fieldnames)
 
     # Have to build up list of unique tuples from the fieldnames
     unique_entries = {}
+
+    # Loop through the file and write to output in a single pass
     for row in reader:
-        entry = []
         new_row = []
-        # Loop through fields twice:
-        # 1. Get all entries that need to be deidentified, see if they have already (if not, do it)
-        # 2. Add all the fields to the new list using the deidentified data
-        for field in row.fieldnames:
-            if field in target_fields:
-                entry.append(row[field])
+
+        # get the identifiable columns from the row that need to be deidentified
+        entry = tuple(row[field] for field in target_fields)
+
+        # if we have already deidentified this row, let's replace those columns
+        if entry in unique_entries:
+            deidentified_entry = unique_entries[entry]
+        else:
+            deidentified_entry = deidentify_row(row, target_fields)
+            unique_entries[entry] = deidentified_entry
+
+        # fieldnames preserves ordering of fields in the original CSV file
+        for field in fieldnames:
+            if field in deidentified_entry.keys():
+                new_row.append(deidentified_entry[field])
             else:
                 new_row.append(row[field])
 
-        # Convert to tuple to use as dict key
-        key = tuple(entry)
-        if key in unique_entries.keys():
-            # Only want to add a key once
-        else:
-            unique_entries[tuple(entry)] = ()
-    
-    # I now have a dict with the key being the values to be deidentified
+        writer.writerow(new_row)
+
+    # close the output file
+    out.close()
+
+    print('Finished!')
 
 
 def detect_type(entry):
-    """Determines where a field is numeric, alphanumeric, or alphebetical letters only"""
+    """Determines where a field is numeric, alphanumeric, or alphabetical letters only"""
     if entry.isdigit():
         return 'numeric'
     elif entry.isalpha():
@@ -55,24 +74,28 @@ def detect_type(entry):
     else:
         return 'alpha'
 
-def replace_entry(type_, value):
+
+def replace_entry(value):
+    """Returns a random string of the given type and of the same length as the original value"""
+    type_ = detect_type(value)
+
     if type_ == 'numeric':
         chars = string.digits
     elif type_ == 'alpha':
         chars = string.ascii_lowercase
-    elif type_ == 'alnum':
+    else:
         chars = string.digits + string.ascii_lowercase
 
-    return ''.join(random.choice(chars) for _ in value)
+    return ''.join(random.choice(chars) for _ in range(len(value)))
 
-def randomize_data(types, values):
-    """Given a tuple of field types, returns a randomized tuple of values"""
-    deidentified_data = []
-    for type_, value in zip(types, values):
-        deidentified_data.append(replace_entry(type_, value))
 
-    return deidentified_data
-        
+def deidentify_row(row, fields):
+    """Deidentifies the specified fields in all rows of a CSV file
+        Returns  dict mapping field name -> new deidentified value"""
 
-def deindentify_row(rows, fields):
-    """Deidentifies the specified fields in all rows of a CSV file"""
+    deidentified_entry = {}
+
+    for field in fields:
+        deidentified_entry[field] = replace_entry(row[field])
+
+    return deidentified_entry
