@@ -3,7 +3,7 @@ import os
 from readers import open_csv
 import random
 import string
-from simplecrypt import encrypt
+from simplecrypt import encrypt, decrypt
 from getpass import getpass
 import pickle
 
@@ -158,10 +158,13 @@ def load_encrypted_dict():
 
     filename = ask_load_filename()
 
+    if not filename:
+        return
+    
     password = getpass('encryption password: ')
 
     with open(filename, 'rb') as enc_input:
-        ciphertext = env_input.read()
+        ciphertext = enc_input.read()
         data = pickle.loads(decrypt(password, ciphertext))
         return data
     
@@ -181,10 +184,12 @@ def ask_save_filename():
 def ask_load_filename():
     # Ask for filename
     filename = input('Enter the full path and filename to load the table (Ctrl-C to cancel): ')
-    if os.path.exists(filename):
+    if not os.path.exists(filename):
         ans = input('This file doesn\'t exist, do you want to try again? (Y/N): ')
         if ans == 'Y':
             # Recursion, baby
             filename = ask_load_filename()
-
+        else:
+            return
+        
     return filename
