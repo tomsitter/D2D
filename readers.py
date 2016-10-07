@@ -1,18 +1,12 @@
 from csv import DictReader
-import os
 
 
-def open_csv(emr=None, filename=None):
+class EMRDictReader(DictReader):
     """Reads a CSV file from an EMR export. Accepts "pss" and "accuro"
     """
-    assert emr.lower() in ('accuro', 'pss')
-    assert os.path.exists(filename)
+    def __init__(self, f, emr=None, *args, **kwargs):
+        # PSS puts a newline at the start of the file
+        if emr.lower() == 'pss':
+            next(f)
 
-    f = open(filename)
-    # PSS puts a newline at the start of the file
-    if emr.lower() == 'pss':
-        next(f)
-
-    reader = DictReader(f)
-
-    return reader
+        super().__init__(f)

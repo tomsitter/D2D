@@ -1,6 +1,6 @@
 import csv
 import os
-from readers import open_csv
+from readers import EMRDictReader
 import random
 import string
 from simplecrypt import encrypt, decrypt
@@ -39,8 +39,11 @@ def deidentify(emr='accuro', target_fields=None, filename=None, output=None, uni
 
         Note: If deidentifying multiple files, the target fields must be the same in all files
     """
-    # Open a dict reader to the CSV file
-    with open_csv(emr=emr, filename=filename) as reader:
+    assert os.path.exists(filename)
+
+    with open(filename) as f:
+        reader = EMRDictReader(f, emr=emr)
+        # Open a dict reader to the CSV file
         fieldnames = reader.fieldnames
 
         # Make sure target_fields is a list

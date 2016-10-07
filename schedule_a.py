@@ -15,7 +15,7 @@ date_format = '%m/%d/%Y'
 filepath = r'C:\Users\admin\Documents\East GTA\Schedule A'
 
 
-def weight_mgmt():
+def weight_mgmt_change():
 
     billing_file = 'WM_Weight_20160401-20160930.csv'
 
@@ -35,7 +35,24 @@ def weight_mgmt():
         else:
             print(patient, ": Only 1 weight")
 
+def weight_mgmt_appt_type():
 
+    billing_file = 'WM_AllVisits_20160401-20160930.csv'
+
+    visits = build_dict(filename=os.path.join(filepath, billing_file),
+                       key=('First Name', 'Last Name'),
+                       event_fields=Event(date='Bill Date', value='PCode'))
+
+    summary = {
+        'only_INI': [],
+        'WFU_WGS': [],
+    }
+    for patient, events in visits.items():
+        only_INI = all(event.value=='WINI' for event in events)
+        if only_INI:
+            summary['only_INI'].append(events)
+        else:
+            summary['WFU_WGS'].append(events)
 
 def mental_health():
 
