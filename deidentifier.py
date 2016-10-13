@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 import os
 from readers import EMRDictReader
 import random
@@ -248,6 +249,21 @@ def dob_to_yob(dob):
         assert False
 
     return yob
+
+
+def replace_date(date):
+    if date != '' and date != None:
+        return 'Yes'
+
+
+def date_to_mmyyyy(date):
+    if date != '' and date != None:
+        try:
+            return datetime.strptime(date, '%b %d, %Y').strftime('%m-%Y')
+        except ValueError:
+            print('Date', date, 'does not match MMM DD, YYYY!')
+            return ''
+
 
 
 if __name__ == '__main__':
