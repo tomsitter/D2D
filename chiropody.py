@@ -15,11 +15,15 @@ physician = defaultdict(int)
 age = []
 dm_foot_risk = defaultdict(int)
 total_dm_foot_risk = 0
-total_measures = 0
+total_visits = 0
+total_reasons = 0
 
-measures = [
+visit_type = [
     "ChiropodyInitialConsult",
-    "ChiropodyF/UConsult",
+    "ChiropodyF/UConsult"
+]
+
+visit_reason = [
     "IngrownToeNailSurgery",
     "DMFootCare",
     "RoutineFootCare",
@@ -27,6 +31,8 @@ measures = [
     "DMFootAssessment",
     "PlantarWarts",
 ]
+
+measures = visit_type + visit_reason
 
 for row in DictReader(initial):
     pat = row["Patient #"]
@@ -40,7 +46,12 @@ for row in DictReader(latest):
             diff_dict[pat][measure] = int(row[measure]) - init_dict[pat][measure]
         else:
             diff_dict[pat][measure] = int(row[measure])
-        total_measures += diff_dict[pat][measure]
+
+        if measure in visit_type:
+            total_visits += diff_dict[pat][measure]
+        else:
+            total_reasons += diff_dict[pat][measure]
+
     sex[row["Sex"]] += 1
     physician[row["patRef.fullName"].title()] += 1
     age.append(int(row["Age"]))
@@ -86,13 +97,21 @@ def percent(value, total):
 # Number of Patients
 print("Number of patients: {}".format(len(diff_dict)))
 
-# Count of each treatment type
-print("\nVisit Types:")
-for measure in measures:
-    print("{}: {} ({}%)".format(measure, 
-                                count_all(diff_dict, measure),
-                                percent(count_all(diff_dict, measure), total_measures)))
-print("Total: ", total_measures)
+# Count of each visit type
+print("\nVisits:")
+for visit_type in visit_types:
+    print("{}: {} ({}%)".format(diff_dict[visit_type], 
+                                count_all(diff_dict, visit_type),
+                                percent(count_all(diff_dict, visit_type), total_visits)))
+print("Total: ", total_visits)
+
+# Count of each visit reason
+print("\nReason For Visit:")
+for visit_reason in visit_reasons:
+    print("{}: {} ({}%)".format(diff_dict[visit_reason], 
+                                count_all(diff_dict, visit_reason),
+                                percent(count_all(diff_dict, visit_reason), total_reasons)))
+print("Total: ", total_reasons)
 
 print('\nDM Foot Risk')
 for risk, count in sorted(dm_foot_risk.items()):
