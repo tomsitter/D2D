@@ -56,7 +56,9 @@ def deidentify(emr='accuro', target_fields=None, filename=None, output=None, uni
             target_fields = [target_fields]
 
         # Make sure all fields to deidentify are in the file
-        assert set(target_fields).issubset(fieldnames)
+        if not set(target_fields).issubset(fieldnames):
+        	print(target_fields, "not in", fieldnames)
+            sys.exit("Can't find target field in file header")
 
         # Open a CSV file to write to, write header
         with open(output, 'w') as out:
